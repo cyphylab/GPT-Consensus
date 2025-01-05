@@ -30,6 +30,24 @@ python GPT-2-Consensus.py [options]
 | `--decode`          | Specify iterations for decoding as a comma-separated list (e.g., `0,4,9`).| `None`             |
 | `--random-prompt`   | Generates a completely random prompt of the specified size.                | `None`             |
 
+### Outputs: `err`, `err2`, and `err3`
+
+- **`err`**:
+  - Tracks layer-wise metrics for each prompt across iterations.
+  - Stores:
+    - Mean cosine similarity (`aux`) of token embeddings in the layer.
+    - Mean pairwise dot products (`aux2`) of token embeddings.
+  - Saved to the file specified by the `--savefile` argument (default: `Eplot.npy`).
+
+- **`err2`**:
+  - Tracks detailed token-to-token interactions for each prompt across iterations.
+  - Stores pairwise dot products (`aux2`) between normalized token embeddings in the layer.
+  - Saved to the file specified by the `--matrixerror` argument.
+
+- **`err3`**:
+  - Captures the model's output logits for specific iterations (if `--decode` is used).
+  - Used to decode and display intermediate outputs.
+
 ### Examples
 
 1. **Default Behavior**:

@@ -98,7 +98,7 @@ class GPT(nn.Module):
     # Forward pass through the model
     def forward(self, idx, targets=None, random_init=False, const_reset=False, skip_mlp=False, N=2000, num_prompts=1, decode_iters=None):
         B, T = idx.size()  # Batch size and sequence length
-        assert T <= self.config.block_size, f"Cannot forward sequence of length {T}, block size is {self.config.block_size}"
+        assert T <= self.config.block_size, f"Cannot forward sequence of length {T}, block size is only {self.config.block_size}"
 
         # Embed tokens and positions
         pos = torch.arange(0, T, dtype=torch.long, device=idx.device)
@@ -113,25 +113,40 @@ class GPT(nn.Module):
         err = torch.zeros((num_prompts, self.config.n_layer * N, 2), device=idx.device)
         err2 = torch.zeros((num_prompts, T, T, self.config.n_layer * N), device=idx.device)
         err3 = torch.zeros((num_prompts, len(decode_iters) if decode_iters else 0, T, 50257), device=idx.device)
-        j = 0
+        j = 0  # Counter for decode iterations
+        u = 0  # Counter for `err` and `err2`
 
         # Iterative processing for `N` steps
         for i in range(N):
+            print(i)  # Debugging: Track the current iteration
             for block in self.transformer.h:
-                x = block(x, skip_mlp=skip_mlp)
-                if const_reset:
-                    self.apply(self._init_weights)
+                x = block(x)  # Pass through the transformer block
+                y = self.transformer.ln_f(x)  # Normalize the output
+                
+                # Compute and update `err` and `err2`
+                for k in range(y.shape[0]):
+                    ya = y[k, :, :].squeeze()  # Extract the batch-specific output
+                    y1 = torch.div(ya, torch.norm(ya, dim=1).unsqueeze(1))  # Normalize rows
+                    aux = torch.abs((ya[0, :] / torch.norm(ya[0, :])) @ y1.T)  # Cosine similarity
+                    aux2 = y1 @ y1.T  # Pairwise dot products
 
+                    err2[0, :, :, u] = aux2  # Update err2
+                    err[k, u, 0] = torch.mean(aux)  # Update mean cosine similarity
+                    err[k, u, 1] = torch.mean(aux2)  # Update mean pairwise dot product
+                u += 1  # Increment counter for `err` and `err2`
+
+            # Save decoded outputs at specified iterations
             if decode_iters and i in decode_iters:
                 err3[:, j, :, :] = self.lm_head(self.transformer.ln_f(x))
                 j += 1
 
-        x = self.transformer.ln_f(x)
-        logits = self.lm_head(x)
+        x = self.transformer.ln_f(x)  # Final layer normalization
+        logits = self.lm_head(x)  # Output logits
         loss = None
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
         return logits, loss, err, err2, err3
+
 
 # Decode outputs from saved logits
 def decode_from_logits(err3, decode_iters, enc):
