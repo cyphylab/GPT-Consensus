@@ -14,7 +14,7 @@ This repository contains a Python script for a GPT-2 model implementation. The s
 
 Run the script with Python:
 ```bash
-python final_gpt_script_with_random_prompt.py [options]
+python GPT-2-Consensus.py [options]
 ```
 
 ### Arguments
@@ -34,22 +34,22 @@ python final_gpt_script_with_random_prompt.py [options]
 
 1. **Default Behavior**:
    ```bash
-   python final_gpt_script_with_random_prompt.py
+   python GPT-2-Consensus.py
    ```
 
 2. **Generate a Random Prompt**:
    ```bash
-   python final_gpt_script_with_random_prompt.py --random-prompt 10
+   python GPT-2-Consensus.py --random-prompt 10
    ```
 
 3. **Decode Specific Iterations**:
    ```bash
-   python final_gpt_script_with_random_prompt.py --decode 0,4,9
+   python GPT-2-Consensus.py --decode 0,4,9
    ```
 
 4. **Save Outputs**:
    ```bash
-   python final_gpt_script_with_random_prompt.py --matrixerror matrix_output --savefile error_output
+   python GPT-2-Consensus.py --matrixerror matrix_output --savefile error_output
    ```
 
 ## Requirements
