@@ -224,32 +224,33 @@ parser.add_argument("--random-prompt", type=int, help="Generate a random prompt 
 parser.add_argument("--use-model", type=int, nargs="?", help="Use the model normally to generate text. Provide max length as a positional value after flag.", const=50)
 args = parser.parse_args()
 
-
-
 # Handle input prompts
 prompts = []
-if args.random_prompt:
-    prompts = [' '.join([enc.decode([random.randint(0, config.vocab_size - 1)]) for _ in range(args.random_prompt)])]
-if args.use_model is not None:
-    prompt = input("Enter a prompt to generate text: ").strip()
-    prompts = [prompt]
-else:
-    while True:
-        prompt = input(f"Enter prompt {len(prompts) + 1} (or press Enter to finish): ").strip()
-        if not prompt:
-            break
-        prompts.append(prompt)
+if args.random_prompt is None:
+    if args.use_model is not None:
+        prompt = input("Enter a prompt to generate text: ").strip()
+        prompts = [prompt]
+    else:
+        while True:
+            prompt = input(f"Enter prompt {len(prompts) + 1} (or press Enter to finish): ").strip()
+            if not prompt:
+                break
+            prompts.append(prompt)
 
-if not prompts:
-    prompts = [
-        "After endless years lost in the shadows of Shakespeare's sonnets and the melancholic musings of Pessoa, I have glimpsed enlightenment's elusive light. Now, on the precipice of my final hour, as the weight of mortality presses upon me, I must reveal to you the one truth that transcends all others—the meaning of life is…"
-    ]
+    if not prompts:
+        prompts = [
+            "Describe a futuristic city where humans and robots live together. Talk about what the city looks like and what daily life is like there."
+        ]
 model = GPT.from_pretrained('gpt2-xl')
 model.eval()
 model.to('cuda')
 
 enc = tiktoken.get_encoding('gpt2')
-# Use model normally (overrides all other arguments)
+
+if args.random_prompt:
+    prompts = [' '.join([enc.decode([random.randint(0, 50257 - 2)]) for _ in range(args.random_prompt)])]
+
+# Use model normally
 if args.use_model is not None:
     max_length = args.use_model
     for prompt in prompts:
