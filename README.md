@@ -8,6 +8,7 @@ This repository contains a Python script for a GPT-2 model implementation. The s
 - **GPT-2 Model**: Implements a GPT-2 model with configurable parameters.
 - **Dynamic Decoding**: Decode outputs at specific iterations using the `--decode` argument.
 - **Customizable Prompts**: Accepts user-provided prompts, generates default prompts, or creates random prompts of a specified size.
+- **Use Model Normally**: A special mode (`--use-model`) to generate text normally by providing a prompt. Automatically sets `N=1` and disables certain features.
 - **Save Outputs**: Optionally save intermediate results (`err` and `err2`) to `.npy` files.
 
 ## Usage
@@ -29,6 +30,7 @@ python GPT-2-Consensus.py [options]
 | `--savefile`        | Saves `err` (Eplot) to a `.npy` file with the specified name.              | `Eplot`            |
 | `--decode`          | Specify iterations for decoding as a comma-separated list (e.g., `0,4,9`).| `None`             |
 | `--random-prompt`   | Generates a completely random prompt of the specified size.                | `None`             |
+| `--use-model`       | Uses the model normally to generate text. Sets `N=1` and disables `--decode`, `--matrixerror`, and `--savefile`. | `False`            |
 
 ### Outputs: `err`, `err2`, and `err3`
 
@@ -65,10 +67,19 @@ python GPT-2-Consensus.py [options]
    python GPT-2-Consensus.py --decode 0,4,9
    ```
 
-4. **Save Outputs**:
+4. **Use Model Normally**:
+   ```bash
+   python GPT-2-Consensus.py --use-model
+   ```
+
+   When prompted, enter the text you want the model to generate text for. This mode disables the `--decode`, `--matrixerror`, and `--savefile` arguments and sets `N=1`.
+
+5. **Save Outputs**:
    ```bash
    python GPT-2-Consensus.py --matrixerror matrix_output --savefile error_output
    ```
+
+---
 
 ## Requirements
 

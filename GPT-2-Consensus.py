@@ -118,11 +118,10 @@ class GPT(nn.Module):
 
         # Iterative processing for `N` steps
         for i in range(N):
-            print(i)  # Debugging: Track the current iteration
             for block in self.transformer.h:
                 x = block(x)  # Pass through the transformer block
                 y = self.transformer.ln_f(x)  # Normalize the output
-                
+
                 # Compute and update `err` and `err2`
                 for k in range(y.shape[0]):
                     ya = y[k, :, :].squeeze()  # Extract the batch-specific output
@@ -170,6 +169,7 @@ parser.add_argument("--matrixerror", type=str, help="Save matrix error (err2) to
 parser.add_argument("--savefile", type=str, default="Eplot", help="File to save err (Eplot).")
 parser.add_argument("--decode", type=str, help="Specify iterations for decoding (comma-separated).")
 parser.add_argument("--random-prompt", type=int, help="Generate a random prompt of the specified length.")
+parser.add_argument("--use-model", action="store_true", help="Use the model normally to generate text. Disables --decode, --matrixerror, and --savefile.")
 args = parser.parse_args()
 
 config = GPTConfig()
@@ -183,6 +183,9 @@ enc = tiktoken.get_encoding('gpt2')
 prompts = []
 if args.random_prompt:
     prompts = [' '.join([enc.decode([random.randint(0, config.vocab_size - 1)]) for _ in range(args.random_prompt)])]
+elif args.use-model:
+    prompt = input("Enter a prompt to generate text: ").strip()
+    prompts = [prompt]
 else:
     while True:
         prompt = input(f"Enter prompt {len(prompts) + 1} (or press Enter to finish): ").strip()
@@ -200,30 +203,43 @@ decode_iters = None
 if args.decode:
     decode_iters = list(map(int, args.decode.split(',')))
 
-# Forward pass and save outputs
+# Use model normally (overrides all other arguments)
+if args.use-model:
+    args.size = 1  # Override default size
+    args.decode = None  # Disable decoding
+    args.matrixerror = None  # Disable matrix error saving
+    args.savefile = None  # Disable err saving
+
+# Forward pass
 results = []
 for i, prompt in enumerate(prompts):
     tokens = enc.encode(prompt)
-    tokens = torch.tensor(tokens, dtype=torch.long).unsqueeze(0)
-    x = tokens.to('cuda')
+    tokens = torch.tensor(tokens, dtype=torch.long).unsqueeze(0).to('cuda')
 
     with torch.no_grad():
-        logits, loss, err, err2, err3 = model(
-            x,
-            random_init=args.random_init,
-            const_reset=args.const_reset,
-            skip_mlp=args.noff,
-            N=args.size,
-            num_prompts=len(prompts),
-            decode_iters=decode_iters,
-        )
+        if args.use-model:
+            logits, _, _, _, _ = model(tokens, N=args.size)
+            decoded_tokens = logits.argmax(dim=-1).squeeze().tolist()
+            decoded_output = enc.decode(decoded_tokens)
+            print(f"Generated Text: {decoded_output}")
+        else:
+            logits, loss, err, err2, err3 = model(
+                tokens,
+                random_init=args.random_init,
+                const_reset=args.const_reset,
+                skip_mlp=args.noff,
+                N=args.size,
+                num_prompts=len(prompts),
+                decode_iters=decode_iters,
+            )
 
-    err_np = err.cpu().numpy()
-    np.save(f"{args.savefile}.npy", err_np)
+            err_np = err.cpu().numpy()
+            if args.savefile:
+                np.save(f"{args.savefile}.npy", err_np)
 
-    if args.matrixerror:
-        err2_np = err2.cpu().numpy()
-        np.save(f"{args.matrixerror}.npy", err2_np)
+            if args.matrixerror:
+                err2_np = err2.cpu().numpy()
+                np.save(f"{args.matrixerror}.npy", err2_np)
 
-    if decode_iters:
-        decode_from_logits(err3, decode_iters, enc)
+            if decode_iters:
+                decode_from_logits(err3, decode_iters, enc)
