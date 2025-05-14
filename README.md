@@ -5,12 +5,12 @@ This repository contains a script for consensus-based decoding and generation us
 ## Features
 
 - **Model Choice**: Use `EleutherAI/gpt-neo-2.7B` by default or switch to `gpt2-xl` using `--nneo`.
-- **Consensus Decoding**: Apply multiple forward passes to study convergence of hidden states.
 - **Prompt Sampling**: Generate a batch of random prompts of arbitrary size and token length.
 - **Skip MLPs**: Remove the feedforward sublayers (`--noff`) to study their influence.
 - **Random Initialization**: Reset model weights with `--randominit` to test stability.
 - **Text Generation**: Generate output using consensus-informed token sampling (`--use-model`).
 - **Save Outputs**: Export hidden state and similarity metrics to `.npy` files.
+-  **Random Initialization**: Reset model weights with `--randominit` or `--fullrandom` to test stability.
 
 ## Usage
 
@@ -29,6 +29,7 @@ python GPTConsensus.py [options]
 | `--use-model K`        | Generate `K` tokens with consensus-based top-p sampling.                      | `None`      |
 | `--savefile NAME`      | Prefix for `.npy` files to save hidden states or metrics.                     | `None`      |
 | `--nneo`               | Use GPT-2-XL (`gpt2-xl`) instead of GPT-Neo (`EleutherAI/gpt-neo-2.7B`).      | `False`     |
+| `--fullrandom`         | Re-initialize model weights randomly at startup and after each model pass.    | `False`     |
 
 ## Output Files
 
