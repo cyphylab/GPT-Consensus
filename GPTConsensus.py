@@ -44,18 +44,9 @@ def patch_skip_mlp(model):
 
 # ---------------- helper: (re)initialise weights ----------------
 
-def reset_parameters_in_place(model, reference_module):
+def reset_parameters_in_place(model):
     """Completely re‑initialise *all* sub‑modules that expose `reset_parameters`."""
-
-    def _try_reset(m):
-        if hasattr(m, "reset_parameters"):
-            try:
-                m.reset_parameters()
-            except Exception:
-                # some HF modules override reset_parameters() expecting kwargs — skip
-                pass
-
-    model.apply(_try_reset)
+    model.apply(model._init_weights)
 
 
 # ---------------- consensus helper ----------------
@@ -128,11 +119,16 @@ def consensus(model, seq, loop_size: int, skip_mlp: bool, fullrandom: bool = Fal
 
         # optionally re‑initialise model weights for the **next** iteration
         if fullrandom and i != loop_size - 1:
-            reset_parameters_in_place(model, hidden)
+            S=SEED+i+1
+            random.seed(S)
+            np.random.seed(S)
+            torch.manual_seed(S)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(S)
+            reset_parameters_in_place(model)
             if skip_mlp:
                 # we destroyed ZeroMLP when we reinitialised -> patch again
                 patch_skip_mlp(model)
-            torch.manual_seed(SEED + step + 1)  # make randomness reproducible
     return hidden, diag
 
 
@@ -195,7 +191,7 @@ def main():
     # optional *one‑off* random initialisation (before any computation)
     if args.randominit or args.fullrandom:
         print("Randomly initialising model weights (pre‑run)...")
-        reset_parameters_in_place(model, next(model.parameters()))
+        reset_parameters_in_place(model)
 
     model.eval()
 
