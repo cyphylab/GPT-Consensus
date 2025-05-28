@@ -95,7 +95,7 @@ def consensus(model, seq, loop_size: int, skip_mlp: bool, fullrandom: bool = Fal
     for batch_idx in range(B):
         hn = hidden[batch_idx]  # [T, D]
         y1 = hn / hn.norm(dim=1, keepdim=True)
-        aux = torch.abs((y1[0] @ y1.T))  # cosine similarity with first token
+        aux = y1[0] @ y1.T
         diag[batch_idx, 0] = 1 - aux.mean()
 
     # --- consensus iterations ---
@@ -112,7 +112,7 @@ def consensus(model, seq, loop_size: int, skip_mlp: bool, fullrandom: bool = Fal
             for batch_idx in range(B):
                 hn = hidden[batch_idx]
                 y1 = hn / hn.norm(dim=1, keepdim=True)
-                aux = torch.abs((y1[0] @ y1.T))
+                aux = y1[0] @ y1.T
                 diag[batch_idx, idx + layer_idx] = 1-aux.mean()
 
         hidden = model.transformer.ln_f(hidden)
